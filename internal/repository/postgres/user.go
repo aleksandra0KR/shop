@@ -24,11 +24,17 @@ func (r *Users) GetUserByUsername(username string) (*domain.User, error) {
 	return &user, nil
 }
 
-func (r *Users) UpdateUser(user *domain.User) error {
-	r.db.Save(&user)
-	if r.db.Error != nil {
-		log.Errorf(r.db.Error.Error())
-		return r.db.Error
+func (r *Users) UpdateUser(tx *gorm.DB, user *domain.User) error {
+	var db *gorm.DB
+	if tx != nil {
+		db = tx
+	} else {
+		db = r.db
+	}
+	db.Save(&user)
+	if db.Error != nil {
+		log.Errorf(db.Error.Error())
+		return db.Error
 	}
 	return nil
 }

@@ -14,20 +14,27 @@ func NewPurchasesRepository(db *gorm.DB) *Purchases {
 	return &Purchases{db: db}
 }
 
-func (r *Purchases) Create(purchase *domain.Purchase) (*domain.Purchase, error) {
-	r.db.Create(purchase)
-	if r.db.Error != nil {
-		log.Errorf(r.db.Error.Error())
-		return nil, r.db.Error
+func (r *Purchases) Create(tx *gorm.DB, purchase *domain.Purchase) (*domain.Purchase, error) {
+	var db *gorm.DB
+	if tx != nil {
+		db = tx
+	} else {
+		db = r.db
+	}
+	db.Create(purchase)
+	if db.Error != nil {
+		log.Errorf(db.Error.Error())
+		return nil, db.Error
 	}
 	return purchase, nil
+
 }
 func (r *Purchases) GetPurchasesForUserByUserGUID(userGUID string) ([]domain.Purchase, error) {
 	var purchases []domain.Purchase
-	err := r.db.Where("user_guid = ?", userGUID).Find(&purchases)
-	if err != nil {
-		log.Errorf(err.Error.Error())
-		return nil, err.Error
+	db := r.db.Where("user_guid = ?", userGUID).Find(&purchases)
+	if db.Error != nil {
+		log.Errorf(db.Error.Error())
+		return nil, db.Error
 	}
 	return purchases, nil
 }
