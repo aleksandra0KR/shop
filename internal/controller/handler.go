@@ -9,10 +9,10 @@ import (
 )
 
 type Handler struct {
-	service *usecase.UsecaseImplementation
+	service usecase.Usecase
 }
 
-func NewHandler(service *usecase.UsecaseImplementation) *Handler {
+func NewHandler(service usecase.Usecase) *Handler {
 	return &Handler{service: service}
 }
 
@@ -40,9 +40,16 @@ func (h *Handler) AuthHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
+	if req.Username == "" || req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid fields"})
+		return
+	}
 
 	user, err := h.service.Auth(req.Username, req.Password)
 	if err != nil {
+		if err.Error() != "user not found" && err.Error() != "invalid password" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
@@ -65,15 +72,23 @@ func (h *Handler) SendCoinHandler(c *gin.Context) {
 		ReceiverUsername string  `json:"receiver_username"`
 		Amount           float64 `json:"amount"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if req.ReceiverUsername == "" || req.Amount <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid fields"})
 		return
 	}
 
 	senderUsername := c.MustGet("username").(string)
 
-	err, transaction := h.service.CreateTransaction(senderUsername, req.ReceiverUsername, req.Amount)
+	transaction, err := h.service.CreateTransaction(senderUsername, req.ReceiverUsername, req.Amount)
 	if err != nil {
+		if err.Error() == "insufficient money" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -83,9 +98,17 @@ func (h *Handler) SendCoinHandler(c *gin.Context) {
 func (h *Handler) BuyItemHandler(c *gin.Context) {
 	itemName := c.Param("item")
 	username := c.MustGet("username").(string)
+	if username == "" || itemName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid fields"})
+		return
+	}
 
-	err, purchase := h.service.CreatePurchase(username, itemName)
+	purchase, err := h.service.CreatePurchase(username, itemName)
 	if err != nil {
+		if err.Error() == "insufficient money" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -94,14 +117,17 @@ func (h *Handler) BuyItemHandler(c *gin.Context) {
 }
 func (h *Handler) InfoHandler(c *gin.Context) {
 	username := c.MustGet("username").(string)
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username is empty"})
+	}
 
-	purchases, err := h.service.GetPurchasesForUserByUserGUID(username)
+	purchases, err := h.service.GetPurchasesForUserByUsername(username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	transactions, err := h.service.GetTransactionsForUserByUserGUID(username)
+	transactions, err := h.service.GetTransactionsForUserByUsername(username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

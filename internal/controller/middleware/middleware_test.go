@@ -49,7 +49,7 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	router := Setup()
 
-	user := domain.User{Username: "test", Password: "test", Guid: "1"}
+	user := domain.User{Username: "test", Password: "test", GUID: "1"}
 	validToken, err := JWT{}.GenerateToken(&user)
 	if err != nil {
 		t.Fatal(err)
