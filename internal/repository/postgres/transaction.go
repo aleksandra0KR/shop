@@ -22,7 +22,7 @@ func (r *Transactions) Create(tx *gorm.DB, transaction *domain.Transaction) (*do
 	} else {
 		db = r.db
 	}
-	transaction.Guid = uuid.New().String()
+	transaction.GUID = uuid.New().String()
 	db.Create(transaction)
 	if db.Error != nil {
 		log.Errorf(db.Error.Error())

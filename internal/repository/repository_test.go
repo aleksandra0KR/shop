@@ -57,7 +57,7 @@ func TestCreatePurchase(t *testing.T) {
 	mockTransactions := new(MockTransactions)
 	mockDB, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	repo := &Repository{
-		Db:           mockDB,
+		DB:           mockDB,
 		Users:        mockUsers,
 		Merch:        mockMerch,
 		Purchases:    mockPurchases,
@@ -92,7 +92,7 @@ func TestCreateTransaction(t *testing.T) {
 	mockTransactions := new(MockTransactions)
 	mockDB, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	repo := &Repository{
-		Db:           mockDB,
+		DB:           mockDB,
 		Users:        mockUsers,
 		Merch:        mockMerch,
 		Purchases:    mockPurchases,

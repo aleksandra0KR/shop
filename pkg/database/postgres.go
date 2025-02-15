@@ -73,38 +73,38 @@ func (postgresDB *Postgres) Migrate() {
 
 func (postgresDB *Postgres) Seed() {
 	users := []domain.User{
-		{Guid: uuid.New().String(), Username: "user1", Password: hashPassword("user1")},
-		{Guid: uuid.New().String(), Username: "user2", Password: hashPassword("hashed_password")},
+		{GUID: uuid.New().String(), Username: "user1", Password: hashPassword("user1")},
+		{GUID: uuid.New().String(), Username: "user2", Password: hashPassword("hashed_password")},
 	}
 	if err := postgresDB.db.CreateInBatches(users, len(users)).Error; err != nil {
 		log.Fatalf("failed to seed users: %v", err)
 	}
 
 	merchItems := []domain.Merch{
-		{Guid: uuid.New().String(), Name: "t-shirt", Price: 80},
-		{Guid: uuid.New().String(), Name: "cup", Price: 20},
-		{Guid: uuid.New().String(), Name: "book", Price: 50},
-		{Guid: uuid.New().String(), Name: "pen", Price: 10},
-		{Guid: uuid.New().String(), Name: "powerbank", Price: 200},
-		{Guid: uuid.New().String(), Name: "hoody", Price: 300},
-		{Guid: uuid.New().String(), Name: "umbrella", Price: 200},
-		{Guid: uuid.New().String(), Name: "socks", Price: 10},
-		{Guid: uuid.New().String(), Name: "wallet", Price: 50},
-		{Guid: uuid.New().String(), Name: "pink-hoody", Price: 500},
+		{GUID: uuid.New().String(), Name: "t-shirt", Price: 80},
+		{GUID: uuid.New().String(), Name: "cup", Price: 20},
+		{GUID: uuid.New().String(), Name: "book", Price: 50},
+		{GUID: uuid.New().String(), Name: "pen", Price: 10},
+		{GUID: uuid.New().String(), Name: "powerbank", Price: 200},
+		{GUID: uuid.New().String(), Name: "hoody", Price: 300},
+		{GUID: uuid.New().String(), Name: "umbrella", Price: 200},
+		{GUID: uuid.New().String(), Name: "socks", Price: 10},
+		{GUID: uuid.New().String(), Name: "wallet", Price: 50},
+		{GUID: uuid.New().String(), Name: "pink-hoody", Price: 500},
 	}
 	if err := postgresDB.db.CreateInBatches(merchItems, len(merchItems)).Error; err != nil {
 		log.Fatalf("failed to seed merchandise: %v", err)
 	}
 
 	purchases := []domain.Purchase{
-		{Guid: uuid.New().String(), UserGUID: users[0].Guid, MerchGUID: merchItems[0].Guid, CreatedAt: time.Now()},
+		{GUID: uuid.New().String(), UserGUID: users[0].GUID, MerchGUID: merchItems[0].GUID, CreatedAt: time.Now()},
 	}
 	if err := postgresDB.db.CreateInBatches(purchases, len(purchases)).Error; err != nil {
 		log.Fatalf("failed to seed purchases: %v", err)
 	}
 
 	transactions := []domain.Transaction{
-		{Guid: uuid.New().String(), ReceiverGUID: users[0].Guid, SenderGUID: users[1].Guid, MoneyAmount: 100, CreatedAt: time.Now()},
+		{GUID: uuid.New().String(), ReceiverGUID: users[0].GUID, SenderGUID: users[1].GUID, MoneyAmount: 100, CreatedAt: time.Now()},
 	}
 	if err := postgresDB.db.CreateInBatches(transactions, len(transactions)).Error; err != nil {
 		log.Fatalf("failed to seed transactions: %v", err)
