@@ -16,7 +16,6 @@ func (JWT) GenerateToken(user *domain.User) (string, error) {
 	expirationTime := time.Now().Add(5 * time.Hour)
 	claims := &domain.Claims{
 		Username: user.Username,
-		UserGUID: user.Guid,
 		StandardClaims: jwt.StandardClaims{
 			Subject:   user.Guid,
 			ExpiresAt: expirationTime.Unix(),
@@ -39,24 +38,18 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization header"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing accessToken"})
 			c.Abort()
 			return
 		}
 
 		claims := jwt.MapClaims{}
-
 		token, err := jwt.ParseWithClaims(authHeader, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(os.Getenv("SECRET_KEY")), nil
 		})
 
 		if err != nil {
-			if err == jwt.ErrSignatureInvalid {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-				c.Abort()
-				return
-			}
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
