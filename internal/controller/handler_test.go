@@ -162,7 +162,7 @@ func TestSendCoinHandler_Success(t *testing.T) {
 	c.Set("username", "sender")
 
 	transaction := domain.Transaction{GUID: "1", ReceiverUsername: "user2", SenderUsername: "user1", MoneyAmount: 10.0, CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
-	mockUsecase.EXPECT().CreateTransaction("sender", "receiver", 10.0).Return(&transaction, nil)
+	mockUsecase.EXPECT().CreateTransaction("receiver", "sender", 10.0).Return(&transaction, nil)
 	expectedResponseBody := `{"guid":"1","created_at":"0001-01-01T00:00:00Z","receiver_username":"user2","sender_username":"user1","money_amount":10}`
 
 	h.SendCoinHandler(c)
@@ -183,7 +183,7 @@ func TestSendCoinHandler_InternalServerError(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("username", "sender")
 
-	mockUsecase.EXPECT().CreateTransaction("sender", "receiver", 10.0).Return(nil, errors.New("db error"))
+	mockUsecase.EXPECT().CreateTransaction("receiver", "sender", 10.0).Return(nil, errors.New("db error"))
 	expectedResponseBody := `{"error":"db error"}`
 
 	h.SendCoinHandler(c)
@@ -204,7 +204,7 @@ func TestSendCoinHandler_InsufficientFunds(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("username", "sender")
 
-	mockUsecase.EXPECT().CreateTransaction("sender", "receiver", 10.0).Return(nil, errors.New("insufficient money"))
+	mockUsecase.EXPECT().CreateTransaction("receiver", "sender", 10.0).Return(nil, errors.New("insufficient money"))
 	expectedResponseBody := `{"error":"insufficient money"}`
 
 	h.SendCoinHandler(c)

@@ -83,7 +83,7 @@ func (h *Handler) SendCoinHandler(c *gin.Context) {
 
 	senderUsername := c.MustGet("username").(string)
 
-	transaction, err := h.service.CreateTransaction(senderUsername, req.ReceiverUsername, req.Amount)
+	transaction, err := h.service.CreateTransaction(req.ReceiverUsername, senderUsername, req.Amount)
 	if err != nil {
 		if err.Error() == "insufficient money" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

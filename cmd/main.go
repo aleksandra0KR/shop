@@ -21,7 +21,7 @@ func main() {
 
 	port := os.Getenv("HTTP_PORT")
 	db := database.InitializeDBPostgres(3, 10)
-	// db.Seed()
+	db.Seed()
 	logger.InitLogger()
 
 	repository := repository.NewRepository(db.GetDB())

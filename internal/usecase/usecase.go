@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"errors"
-
 	"shop/domain"
 	"shop/internal/repository"
 	hash "shop/pkg"
@@ -32,7 +31,7 @@ func (r *UsecaseImplementation) Auth(username string, password string) (*domain.
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
+	if user.Username == "" {
 		newUser := &domain.User{
 			Username: username,
 			Password: hash.HashPassword(password),

@@ -64,6 +64,10 @@ func (r *Repository) CreatePurchase(username string, merchName string) (*domain.
 		tx.Rollback()
 		return nil, err
 	}
+	if merch == nil || merch.Name == "" {
+		tx.Rollback()
+		return nil, errors.New("no merch found")
+	}
 
 	if user.Balance < (merch.Price) {
 		tx.Rollback()
@@ -102,6 +106,10 @@ func (r *Repository) CreateTransaction(receiverName, senderName string, money fl
 		tx.Rollback()
 		log.Errorf(err.Error())
 		return nil, err
+	}
+	if receiver == nil || receiver.Username == "" {
+		tx.Rollback()
+		return nil, errors.New("no such user")
 	}
 
 	sender, err := r.Users.GetUserByUsername(senderName)

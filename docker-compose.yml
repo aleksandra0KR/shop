@@ -19,7 +19,7 @@ services:
     restart: always
     image: postgres:13.3
     ports:
-      - "5437:5432"
+      - "5438:5432"
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
