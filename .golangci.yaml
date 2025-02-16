@@ -31,3 +31,14 @@ linters:
     - ineffassign
     - staticcheck
     - unconvert
+
+issues:
+  exclude-rules:
+    - path: (_test\.go|tests)
+      linters:
+        - bodyclose
+        - dupl
+        - funlen
+        - goerr113
+        #- gosec
+        - noctx
