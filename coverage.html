@@ -1,0 +1,1246 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cmd: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">shop/cmd/main.go (0.0%)</option>
+				
+				<option value="file1">shop/internal/controller/handler.go (90.0%)</option>
+				
+				<option value="file2">shop/internal/controller/middleware/jwt.go (86.2%)</option>
+				
+				<option value="file3">shop/internal/repository/mocks_repo/mock.go (0.0%)</option>
+				
+				<option value="file4">shop/internal/repository/postgres/merch.go (0.0%)</option>
+				
+				<option value="file5">shop/internal/repository/postgres/purchase.go (0.0%)</option>
+				
+				<option value="file6">shop/internal/repository/postgres/transaction.go (0.0%)</option>
+				
+				<option value="file7">shop/internal/repository/postgres/user.go (0.0%)</option>
+				
+				<option value="file8">shop/internal/repository/repository.go (53.6%)</option>
+				
+				<option value="file9">shop/internal/usecase/mocks/mock.go (100.0%)</option>
+				
+				<option value="file10">shop/internal/usecase/usecase.go (52.9%)</option>
+				
+				<option value="file11">shop/pkg/database/postgres.go (0.0%)</option>
+				
+				<option value="file12">shop/pkg/hash.go (0.0%)</option>
+				
+				<option value="file13">shop/pkg/logger/logger.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "net/http"
+        "os"
+
+        "shop/internal/controller"
+        "shop/internal/repository"
+        "shop/internal/usecase"
+        "shop/pkg/database"
+        "shop/pkg/logger"
+
+        "github.com/joho/godotenv"
+        log "github.com/sirupsen/logrus"
+)
+
+func main() <span class="cov0" title="0">{
+        if err := godotenv.Load(); err != nil </span><span class="cov0" title="0">{
+                log.Println("error loading .env file")
+        }</span>
+
+        <span class="cov0" title="0">port := os.Getenv("HTTP_PORT")
+        db := database.InitializeDBPostgres(3, 10)
+        db.Seed()
+        logger.InitLogger()
+
+        repository := repository.NewRepository(db.GetDB())
+        usecase := usecase.NewUsecase(repository)
+        handlers := controller.NewHandler(usecase)
+        router := handlers.Handle()
+
+        err := http.ListenAndServe(":"+port, router)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("connection failed: %s\n", err.Error())
+        }</span>
+
+        <span class="cov0" title="0">log.Infof("server is running on port %s\n", port)</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package controller
+
+import (
+        "net/http"
+        "time"
+
+        "shop/internal/controller/middleware"
+        "shop/internal/usecase"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Handler struct {
+        service usecase.Usecase
+}
+
+func NewHandler(service usecase.Usecase) *Handler <span class="cov8" title="1">{
+        return &amp;Handler{service: service}
+}</span>
+
+func (h *Handler) Handle() http.Handler <span class="cov8" title="1">{
+        router := gin.Default()
+
+        router.POST("/api/auth", h.AuthHandler)
+        router.GET("/api/info", middleware.AuthMiddleware(), h.InfoHandler)
+        router.POST("/api/sendCoin", middleware.AuthMiddleware(), h.SendCoinHandler)
+        router.POST("/api/buy/:item", middleware.AuthMiddleware(), h.BuyItemHandler)
+
+        router.NoRoute(func(c *gin.Context) </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotImplemented,
+                        gin.H{"code": http.StatusNotImplemented, "error": "not implemented"})
+        }</span>)
+        <span class="cov8" title="1">return router</span>
+}
+
+func (h *Handler) AuthHandler(c *gin.Context) <span class="cov8" title="1">{
+        var req struct {
+                Username string `json:"username"`
+                Password string `json:"password"`
+        }
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+                return
+        }</span>
+        <span class="cov8" title="1">if req.Username == "" || req.Password == "" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid fields"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">user, err := h.service.Auth(req.Username, req.Password)
+        if err != nil </span><span class="cov8" title="1">{
+                if err.Error() != "invalid password" </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                }</span>
+                <span class="cov8" title="1">c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+                return</span>
+        }
+
+        <span class="cov8" title="1">token, err := middleware.JWT{}.GenerateToken(user)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov8" title="1">expirationTime := time.Now().Add(5 * time.Hour)
+        c.SetCookie("accessToken", token, int(expirationTime.Unix()), "/", "localhost", false, false)
+
+        c.JSON(http.StatusOK, gin.H{"response": gin.H{"accessToken": token}})</span>
+}
+
+func (h *Handler) SendCoinHandler(c *gin.Context) <span class="cov8" title="1">{
+        var req struct {
+                ReceiverUsername string  `json:"receiver_username"`
+                Amount           float64 `json:"amount"`
+        }
+        if err := c.ShouldBind(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+                return
+        }</span>
+        <span class="cov8" title="1">if req.ReceiverUsername == "" || req.Amount &lt;= 0 </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid fields"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">senderUsername := c.MustGet("username").(string)
+
+        transaction, err := h.service.CreateTransaction(req.ReceiverUsername, senderUsername, req.Amount)
+        if err != nil </span><span class="cov8" title="1">{
+                if err.Error() == "insufficient money" </span><span class="cov8" title="1">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                        return
+                }</span>
+                <span class="cov8" title="1">c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return</span>
+        }
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, transaction)</span>
+}
+
+func (h *Handler) BuyItemHandler(c *gin.Context) <span class="cov8" title="1">{
+        itemName := c.Param("item")
+        username := c.MustGet("username").(string)
+        if username == "" || itemName == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid fields"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">purchase, err := h.service.CreatePurchase(username, itemName)
+        if err != nil </span><span class="cov8" title="1">{
+                if err.Error() == "insufficient money" </span><span class="cov8" title="1">{
+                        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                        return
+                }</span>
+                <span class="cov8" title="1">c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return</span>
+        }
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, purchase)</span>
+}
+
+func (h *Handler) InfoHandler(c *gin.Context) <span class="cov8" title="1">{
+        username := c.MustGet("username").(string)
+        if username == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Username is empty"})
+        }</span>
+
+        <span class="cov8" title="1">purchases, err := h.service.GetPurchasesForUserByUsername(username)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">transactions, err := h.service.GetTransactionsForUserByUsername(username)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
+                "purchases":    purchases,
+                "transactions": transactions,
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package middleware
+
+import (
+        "net/http"
+        "os"
+        "time"
+
+        "shop/domain"
+
+        "github.com/dgrijalva/jwt-go"
+        "github.com/gin-gonic/gin"
+        log "github.com/sirupsen/logrus"
+)
+
+type JWT struct{}
+
+func (JWT) GenerateToken(user *domain.User) (string, error) <span class="cov8" title="1">{
+        expirationTime := time.Now().Add(5 * time.Hour)
+        claims := &amp;domain.Claims{
+                Username: user.Username,
+                StandardClaims: jwt.StandardClaims{
+                        Subject:   user.Username,
+                        ExpiresAt: expirationTime.Unix(),
+                },
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+        tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf("error generating token: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return tokenString, err</span>
+}
+
+func AuthMiddleware() gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
+                authHeader, err := c.Cookie("accessToken")
+                if err != nil </span><span class="cov8" title="1">{
+                        c.AbortWithStatus(http.StatusUnauthorized)
+                }</span>
+                <span class="cov8" title="1">if authHeader == "" </span><span class="cov8" title="1">{
+                        c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing accessToken"})
+                        c.Abort()
+                        return
+                }</span>
+
+                <span class="cov8" title="1">claims := jwt.MapClaims{}
+                token, err := jwt.ParseWithClaims(authHeader, claims, func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                        return []byte(os.Getenv("SECRET_KEY")), nil
+                }</span>)
+                <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+                        c.Abort()
+                        return
+                }</span>
+
+                <span class="cov8" title="1">if !token.Valid </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+                        c.Abort()
+                        return
+                }</span>
+
+                <span class="cov8" title="1">username := claims["username"].(string)
+                c.Set("username", username)
+                c.Next()</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: repository.go
+
+// Package mock_repository is a generated GoMock package.
+package mock_repository
+
+import (
+        reflect "reflect"
+        domain "shop/domain"
+
+        gomock "github.com/golang/mock/gomock"
+        gorm "gorm.io/gorm"
+)
+
+// MockUsers is a mock of Users interface.
+type MockUsers struct {
+        ctrl     *gomock.Controller
+        recorder *MockUsersMockRecorder
+}
+
+// MockUsersMockRecorder is the mock recorder for MockUsers.
+type MockUsersMockRecorder struct {
+        mock *MockUsers
+}
+
+// NewMockUsers creates a new mock instance.
+func NewMockUsers(ctrl *gomock.Controller) *MockUsers <span class="cov0" title="0">{
+        mock := &amp;MockUsers{ctrl: ctrl}
+        mock.recorder = &amp;MockUsersMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUsers) EXPECT() *MockUsersMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GetUserByUsername mocks_repo base method.
+func (m *MockUsers) GetUserByUsername(arg0 string) (*domain.User, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetUserByUsername", arg0)
+        ret0, _ := ret[0].(*domain.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetUserByUsername indicates an expected call of GetUserByUsername.
+func (mr *MockUsersMockRecorder) GetUserByUsername(arg0 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockUsers)(nil).GetUserByUsername), arg0)
+}</span>
+
+// UpdateUser mocks_repo base method.
+func (m *MockUsers) UpdateUser(arg0 *gorm.DB, arg1 *domain.User) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// UpdateUser indicates an expected call of UpdateUser.
+func (mr *MockUsersMockRecorder) UpdateUser(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUsers)(nil).UpdateUser), arg0, arg1)
+}</span>
+
+// MockMerch is a mock of Merch interface.
+type MockMerch struct {
+        ctrl     *gomock.Controller
+        recorder *MockMerchMockRecorder
+}
+
+// MockMerchMockRecorder is the mock recorder for MockMerch.
+type MockMerchMockRecorder struct {
+        mock *MockMerch
+}
+
+// NewMockMerch creates a new mock instance.
+func NewMockMerch(ctrl *gomock.Controller) *MockMerch <span class="cov0" title="0">{
+        mock := &amp;MockMerch{ctrl: ctrl}
+        mock.recorder = &amp;MockMerchMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMerch) EXPECT() *MockMerchMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GetMerchByName mocks_repo base method.
+func (m *MockMerch) GetMerchByName(arg0 string) (*domain.Merch, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetMerchByName", arg0)
+        ret0, _ := ret[0].(*domain.Merch)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetMerchByName indicates an expected call of GetMerchByName.
+func (mr *MockMerchMockRecorder) GetMerchByName(arg0 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMerchByName", reflect.TypeOf((*MockMerch)(nil).GetMerchByName), arg0)
+}</span>
+
+// MockPurchases is a mock of Purchases interface.
+type MockPurchases struct {
+        ctrl     *gomock.Controller
+        recorder *MockPurchasesMockRecorder
+}
+
+// MockPurchasesMockRecorder is the mock recorder for MockPurchases.
+type MockPurchasesMockRecorder struct {
+        mock *MockPurchases
+}
+
+// NewMockPurchases creates a new mock instance.
+func NewMockPurchases(ctrl *gomock.Controller) *MockPurchases <span class="cov0" title="0">{
+        mock := &amp;MockPurchases{ctrl: ctrl}
+        mock.recorder = &amp;MockPurchasesMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPurchases) EXPECT() *MockPurchasesMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// Create mocks_repo base method.
+func (m *MockPurchases) Create(arg0 *gorm.DB, arg1 *domain.Purchase) (*domain.Purchase, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Create", arg0, arg1)
+        ret0, _ := ret[0].(*domain.Purchase)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// Create indicates an expected call of Create.
+func (mr *MockPurchasesMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockPurchases)(nil).Create), arg0, arg1)
+}</span>
+
+// GetPurchasesForUserByUserGUID mocks_repo base method.
+func (m *MockPurchases) GetPurchasesForUserByUserGUID(arg0 string) ([]domain.Purchase, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetPurchasesForUserByUserGUID", arg0)
+        ret0, _ := ret[0].([]domain.Purchase)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetPurchasesForUserByUserGUID indicates an expected call of GetPurchasesForUserByUserGUID.
+func (mr *MockPurchasesMockRecorder) GetPurchasesForUserByUserGUID(arg0 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPurchasesForUserByUserGUID", reflect.TypeOf((*MockPurchases)(nil).GetPurchasesForUserByUserGUID), arg0)
+}</span>
+
+// MockTransactions is a mock of Transactions interface.
+type MockTransactions struct {
+        ctrl     *gomock.Controller
+        recorder *MockTransactionsMockRecorder
+}
+
+// MockTransactionsMockRecorder is the mock recorder for MockTransactions.
+type MockTransactionsMockRecorder struct {
+        mock *MockTransactions
+}
+
+// NewMockTransactions creates a new mock instance.
+func NewMockTransactions(ctrl *gomock.Controller) *MockTransactions <span class="cov0" title="0">{
+        mock := &amp;MockTransactions{ctrl: ctrl}
+        mock.recorder = &amp;MockTransactionsMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTransactions) EXPECT() *MockTransactionsMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// Create mocks_repo base method.
+func (m *MockTransactions) Create(arg0 *gorm.DB, arg1 *domain.Transaction) (*domain.Transaction, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Create", arg0, arg1)
+        ret0, _ := ret[0].(*domain.Transaction)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// Create indicates an expected call of Create.
+func (mr *MockTransactionsMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockTransactions)(nil).Create), arg0, arg1)
+}</span>
+
+// GetTransactionsForUserByUserGUID mocks_repo base method.
+func (m *MockTransactions) GetTransactionsForUserByUserGUID(arg0 string) ([]domain.Transaction, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetTransactionsForUserByUserGUID", arg0)
+        ret0, _ := ret[0].([]domain.Transaction)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetTransactionsForUserByUserGUID indicates an expected call of GetTransactionsForUserByUserGUID.
+func (mr *MockTransactionsMockRecorder) GetTransactionsForUserByUserGUID(arg0 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionsForUserByUserGUID", reflect.TypeOf((*MockTransactions)(nil).GetTransactionsForUserByUserGUID), arg0)
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package postgres
+
+import (
+        "shop/domain"
+
+        log "github.com/sirupsen/logrus"
+        "gorm.io/gorm"
+)
+
+type Merch struct {
+        db *gorm.DB
+}
+
+func NewMerchRepository(db *gorm.DB) *Merch <span class="cov0" title="0">{
+        return &amp;Merch{db: db}
+}</span>
+
+func (r *Merch) GetMerchByName(name string) (*domain.Merch, error) <span class="cov0" title="0">{
+        var merch domain.Merch
+        r.db.Where("name = ?", name).First(&amp;merch)
+        if r.db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(r.db.Error.Error())
+                return nil, r.db.Error
+        }</span>
+        <span class="cov0" title="0">return &amp;merch, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package postgres
+
+import (
+        "shop/domain"
+
+        log "github.com/sirupsen/logrus"
+        "gorm.io/gorm"
+)
+
+type Purchases struct {
+        db *gorm.DB
+}
+
+func NewPurchasesRepository(db *gorm.DB) *Purchases <span class="cov0" title="0">{
+        return &amp;Purchases{db: db}
+}</span>
+
+func (r *Purchases) Create(tx *gorm.DB, purchase *domain.Purchase) (*domain.Purchase, error) <span class="cov0" title="0">{
+        var db *gorm.DB
+        if tx != nil </span><span class="cov0" title="0">{
+                db = tx
+        }</span> else<span class="cov0" title="0"> {
+                db = r.db
+        }</span>
+        <span class="cov0" title="0">db.Create(purchase)
+        if db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(db.Error.Error())
+                return nil, db.Error
+        }</span>
+        <span class="cov0" title="0">return purchase, nil</span>
+}
+
+func (r *Purchases) GetPurchasesForUserByUsername(username string) ([]domain.Purchase, error) <span class="cov0" title="0">{
+        var purchases []domain.Purchase
+        db := r.db.Where("user_id= ?", username).Find(&amp;purchases)
+        if db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(db.Error.Error())
+                return nil, db.Error
+        }</span>
+        <span class="cov0" title="0">return purchases, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package postgres
+
+import (
+        "shop/domain"
+
+        "github.com/google/uuid"
+        log "github.com/sirupsen/logrus"
+        "gorm.io/gorm"
+)
+
+type Transactions struct {
+        db *gorm.DB
+}
+
+func NewTransactionsRepository(db *gorm.DB) *Transactions <span class="cov0" title="0">{
+        return &amp;Transactions{db: db}
+}</span>
+
+func (r *Transactions) Create(tx *gorm.DB, transaction *domain.Transaction) (*domain.Transaction, error) <span class="cov0" title="0">{
+        var db *gorm.DB
+        if tx != nil </span><span class="cov0" title="0">{
+                db = tx
+        }</span> else<span class="cov0" title="0"> {
+                db = r.db
+        }</span>
+        <span class="cov0" title="0">transaction.GUID = uuid.New().String()
+        db.Create(transaction)
+        if db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(db.Error.Error())
+                return nil, db.Error
+        }</span>
+        <span class="cov0" title="0">return transaction, nil</span>
+}
+
+func (r *Transactions) GetTransactionsForUserByUsername(username string) ([]domain.Transaction, error) <span class="cov0" title="0">{
+        var transactions []domain.Transaction
+
+        r.db.Where("receiver_username = ? OR sender_username = ?", username, username).Find(&amp;transactions)
+        if r.db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(r.db.Error.Error())
+                return nil, r.db.Error
+        }</span>
+        <span class="cov0" title="0">return transactions, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package postgres
+
+import (
+        "shop/domain"
+
+        log "github.com/sirupsen/logrus"
+        "gorm.io/gorm"
+)
+
+type Users struct {
+        db *gorm.DB
+}
+
+func NewUsersRepository(db *gorm.DB) *Users <span class="cov0" title="0">{
+        return &amp;Users{db: db}
+}</span>
+
+func (r *Users) GetUserByUsername(username string) (*domain.User, error) <span class="cov0" title="0">{
+        var user domain.User
+        r.db.Where("username = ?", username).First(&amp;user)
+        if r.db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(r.db.Error.Error())
+                return nil, r.db.Error
+        }</span>
+        <span class="cov0" title="0">return &amp;user, nil</span>
+}
+
+func (r *Users) UpdateUser(tx *gorm.DB, user *domain.User) error <span class="cov0" title="0">{
+        var db *gorm.DB
+        if tx != nil </span><span class="cov0" title="0">{
+                db = tx
+        }</span> else<span class="cov0" title="0"> {
+                db = r.db
+        }</span>
+        <span class="cov0" title="0">db.Save(&amp;user)
+        if db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(db.Error.Error())
+                return db.Error
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (r *Users) CreateUser(user *domain.User) (*domain.User, error) <span class="cov0" title="0">{
+        r.db.Create(&amp;user)
+        if r.db.Error != nil </span><span class="cov0" title="0">{
+                log.Errorf(r.db.Error.Error())
+                return nil, r.db.Error
+        }</span>
+        <span class="cov0" title="0">return user, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package repository
+
+import (
+        "errors"
+
+        "shop/domain"
+        "shop/internal/repository/postgres"
+
+        log "github.com/sirupsen/logrus"
+        "gorm.io/gorm"
+)
+
+//go:generate mockgen -source=repository.go -destination=mocks/mock.go
+type Repository struct {
+        DB           *gorm.DB
+        Users        Users
+        Merch        Merch
+        Purchases    Purchases
+        Transactions Transactions
+}
+
+func NewRepository(db *gorm.DB) *Repository <span class="cov0" title="0">{
+        return &amp;Repository{
+                DB:           db,
+                Users:        postgres.NewUsersRepository(db),
+                Purchases:    postgres.NewPurchasesRepository(db),
+                Transactions: postgres.NewTransactionsRepository(db),
+                Merch:        postgres.NewMerchRepository(db),
+        }
+}</span>
+
+type Users interface {
+        GetUserByUsername(string) (*domain.User, error)
+        UpdateUser(*gorm.DB, *domain.User) error
+        CreateUser(*domain.User) (*domain.User, error)
+}
+
+type Merch interface {
+        GetMerchByName(string) (*domain.Merch, error)
+}
+
+type Purchases interface {
+        Create(*gorm.DB, *domain.Purchase) (*domain.Purchase, error)
+        GetPurchasesForUserByUsername(string) ([]domain.Purchase, error)
+}
+
+type Transactions interface {
+        Create(*gorm.DB, *domain.Transaction) (*domain.Transaction, error)
+        GetTransactionsForUserByUsername(string) ([]domain.Transaction, error)
+}
+
+func (r *Repository) CreatePurchase(username string, merchName string) (*domain.Purchase, error) <span class="cov8" title="1">{
+        tx := r.DB.Begin()
+        user, err := r.Users.GetUserByUsername(username)
+        if err != nil </span><span class="cov0" title="0">{
+                tx.Rollback()
+                log.Errorf(err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">merch, err := r.Merch.GetMerchByName(merchName)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf(err.Error())
+                tx.Rollback()
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if merch == nil || merch.Name == "" </span><span class="cov0" title="0">{
+                tx.Rollback()
+                return nil, errors.New("no merch found")
+        }</span>
+
+        <span class="cov8" title="1">if user.Balance &lt; (merch.Price) </span><span class="cov8" title="1">{
+                tx.Rollback()
+                return nil, errors.New("insufficient money")
+        }</span>
+        <span class="cov8" title="1">user.Balance -= merch.Price
+
+        purchase := &amp;domain.Purchase{
+                User:      *user,
+                UserID:    user.Username,
+                Merch:     *merch,
+                MerchName: merch.Name,
+        }
+        purchase, err = r.Purchases.Create(tx, purchase)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf(err.Error())
+                tx.Rollback()
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">err = r.Users.UpdateUser(tx, user)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf(err.Error())
+                tx.Rollback()
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">tx.Commit()
+        return purchase, nil</span>
+}
+
+func (r *Repository) CreateTransaction(receiverName, senderName string, money float64) (*domain.Transaction, error) <span class="cov8" title="1">{
+        tx := r.DB.Begin()
+        receiver, err := r.Users.GetUserByUsername(receiverName)
+        if err != nil </span><span class="cov0" title="0">{
+                tx.Rollback()
+                log.Errorf(err.Error())
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if receiver == nil || receiver.Username == "" </span><span class="cov0" title="0">{
+                tx.Rollback()
+                return nil, errors.New("no such user")
+        }</span>
+
+        <span class="cov8" title="1">sender, err := r.Users.GetUserByUsername(senderName)
+        if err != nil </span><span class="cov0" title="0">{
+                tx.Rollback()
+                log.Errorf(err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">if sender.Balance &lt; (money) </span><span class="cov8" title="1">{
+                tx.Rollback()
+                return nil, errors.New("insufficient money")
+        }</span>
+
+        <span class="cov8" title="1">sender.Balance -= money
+        receiver.Balance += money
+
+        transaction := &amp;domain.Transaction{
+                Receiver:         *receiver,
+                Sender:           *sender,
+                MoneyAmount:      money,
+                ReceiverUsername: receiver.Username,
+                SenderUsername:   sender.Username,
+        }
+
+        transaction, err = r.Transactions.Create(tx, transaction)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf(err.Error())
+                tx.Rollback()
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">err = r.Users.UpdateUser(tx, receiver)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf(err.Error())
+                tx.Rollback()
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">err = r.Users.UpdateUser(tx, sender)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf(err.Error())
+                tx.Rollback()
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">tx.Commit()
+        return transaction, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: usecase.go
+
+// Package mock_usecase is a generated GoMock package.
+package mock_usecase
+
+import (
+        reflect "reflect"
+        domain "shop/domain"
+
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockUsecase is a mock of Usecase interface.
+type MockUsecase struct {
+        ctrl     *gomock.Controller
+        recorder *MockUsecaseMockRecorder
+}
+
+// MockUsecaseMockRecorder is the mock recorder for MockUsecase.
+type MockUsecaseMockRecorder struct {
+        mock *MockUsecase
+}
+
+// NewMockUsecase creates a new mock instance.
+func NewMockUsecase(ctrl *gomock.Controller) *MockUsecase <span class="cov8" title="1">{
+        mock := &amp;MockUsecase{ctrl: ctrl}
+        mock.recorder = &amp;MockUsecaseMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder <span class="cov8" title="1">{
+        return m.recorder
+}</span>
+
+// Auth mocks_repo base method.
+func (m *MockUsecase) Auth(username, password string) (*domain.User, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Auth", username, password)
+        ret0, _ := ret[0].(*domain.User)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// Auth indicates an expected call of Auth.
+func (mr *MockUsecaseMockRecorder) Auth(username, password interface{}) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Auth", reflect.TypeOf((*MockUsecase)(nil).Auth), username, password)
+}</span>
+
+// CreatePurchase mocks_repo base method.
+func (m *MockUsecase) CreatePurchase(arg0, arg1 string) (*domain.Purchase, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "CreatePurchase", arg0, arg1)
+        ret0, _ := ret[0].(*domain.Purchase)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// CreatePurchase indicates an expected call of CreatePurchase.
+func (mr *MockUsecaseMockRecorder) CreatePurchase(arg0, arg1 interface{}) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePurchase", reflect.TypeOf((*MockUsecase)(nil).CreatePurchase), arg0, arg1)
+}</span>
+
+// CreateTransaction mocks_repo base method.
+func (m *MockUsecase) CreateTransaction(arg0, arg1 string, arg2 float64) (*domain.Transaction, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "CreateTransaction", arg0, arg1, arg2)
+        ret0, _ := ret[0].(*domain.Transaction)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// CreateTransaction indicates an expected call of CreateTransaction.
+func (mr *MockUsecaseMockRecorder) CreateTransaction(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransaction", reflect.TypeOf((*MockUsecase)(nil).CreateTransaction), arg0, arg1, arg2)
+}</span>
+
+// GetPurchasesForUserByUserGUID mocks_repo base method.
+func (m *MockUsecase) GetPurchasesForUserByUsername(arg0 string) ([]domain.Purchase, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetPurchasesForUserByUserGUID", arg0)
+        ret0, _ := ret[0].([]domain.Purchase)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetPurchasesForUserByUserGUID indicates an expected call of GetPurchasesForUserByUserGUID.
+func (mr *MockUsecaseMockRecorder) GetPurchasesForUserByUserGUID(arg0 interface{}) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPurchasesForUserByUserGUID", reflect.TypeOf((*MockUsecase)(nil).GetPurchasesForUserByUsername), arg0)
+}</span>
+
+// GetTransactionsForUserByUserGUID mocks_repo base method.
+func (m *MockUsecase) GetTransactionsForUserByUsername(arg0 string) ([]domain.Transaction, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetTransactionsForUserByUserGUID", arg0)
+        ret0, _ := ret[0].([]domain.Transaction)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetTransactionsForUserByUserGUID indicates an expected call of GetTransactionsForUserByUserGUID.
+func (mr *MockUsecaseMockRecorder) GetTransactionsForUserByUserGUID(arg0 interface{}) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionsForUserByUserGUID", reflect.TypeOf((*MockUsecase)(nil).GetTransactionsForUserByUsername), arg0)
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package usecase
+
+import (
+        "errors"
+        "shop/domain"
+        "shop/internal/repository"
+        hash "shop/pkg"
+
+        "golang.org/x/crypto/bcrypt"
+)
+
+//go:generate mockgen -source=usecase.go -destination=mocks/mock.go
+type UsecaseImplementation struct {
+        Repository *repository.Repository
+}
+
+type Usecase interface {
+        Auth(username string, password string) (*domain.User, error)
+        GetPurchasesForUserByUsername(string) ([]domain.Purchase, error)
+        CreateTransaction(string, string, float64) (*domain.Transaction, error)
+        CreatePurchase(string, string) (*domain.Purchase, error)
+        GetTransactionsForUserByUsername(string) ([]domain.Transaction, error)
+}
+
+func NewUsecase(repository *repository.Repository) Usecase <span class="cov8" title="1">{
+        return &amp;UsecaseImplementation{Repository: repository}
+}</span>
+
+func (r *UsecaseImplementation) Auth(username string, password string) (*domain.User, error) <span class="cov8" title="1">{
+        user, err := r.Repository.Users.GetUserByUsername(username)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if user.Username == "" </span><span class="cov0" title="0">{
+                newUser := &amp;domain.User{
+                        Username: username,
+                        Password: hash.HashPassword(password),
+                }
+                newUser, err = r.Repository.Users.CreateUser(newUser)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov0" title="0">return newUser, nil</span>
+        }
+        <span class="cov8" title="1">if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil </span><span class="cov8" title="1">{
+                return nil, errors.New("invalid password")
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+func (r *UsecaseImplementation) GetPurchasesForUserByUsername(username string) ([]domain.Purchase, error) <span class="cov8" title="1">{
+        return r.Repository.Purchases.GetPurchasesForUserByUsername(username)
+}</span>
+
+func (r *UsecaseImplementation) CreateTransaction(receiver, sender string, money float64) (*domain.Transaction, error) <span class="cov0" title="0">{
+        return r.Repository.CreateTransaction(receiver, sender, money)
+}</span>
+
+func (r *UsecaseImplementation) CreatePurchase(username string, merchName string) (*domain.Purchase, error) <span class="cov0" title="0">{
+        return r.Repository.CreatePurchase(username, merchName)
+}</span>
+
+func (r *UsecaseImplementation) GetTransactionsForUserByUsername(username string) ([]domain.Transaction, error) <span class="cov8" title="1">{
+        return r.Repository.Transactions.GetTransactionsForUserByUsername(username)
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package database
+
+import (
+        "fmt"
+        "os"
+        "time"
+
+        "shop/domain"
+        hash "shop/pkg"
+
+        log "github.com/sirupsen/logrus"
+        "gorm.io/driver/postgres"
+        "gorm.io/gorm"
+)
+
+type Postgres struct {
+        db                 *gorm.DB
+        MaxIdleConnections int
+        MaxOpenConnections int
+}
+
+func InitializeDBPostgres(maxIdleConnections, maxOpenConnections int) *Postgres <span class="cov0" title="0">{
+        postgresDB := Postgres{
+                MaxIdleConnections: maxIdleConnections,
+                MaxOpenConnections: maxOpenConnections,
+        }
+
+        dbHost := os.Getenv("DB_HOST")
+        dbUser := os.Getenv("DB_USER")
+        dbPassword := os.Getenv("DB_PASSWORD")
+        dbName := os.Getenv("DB_NAME")
+        dbPort := os.Getenv("DB_PORT")
+
+        connectionDBUrl := fmt.Sprintf(`host=%s user=%s password=%s dbname=%s port=%s`, dbHost, dbUser, dbPassword, dbName, dbPort)
+        log.Infof(connectionDBUrl)
+
+        var db *gorm.DB
+        var err error
+        maxRetries := 10
+        retryDelay := 5 * time.Second
+
+        for i := 0; i &lt; maxRetries; i++ </span><span class="cov0" title="0">{
+                db, err = gorm.Open(postgres.Open(connectionDBUrl), &amp;gorm.Config{})
+                if err == nil </span><span class="cov0" title="0">{
+                        break</span>
+                }
+                <span class="cov0" title="0">log.Warnf("failed to connect to database: %v. Retrying in %v...", err, retryDelay)
+                time.Sleep(retryDelay)</span>
+        }
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("failed to connect to database after %d retries: %v", maxRetries, err)
+        }</span>
+        <span class="cov0" title="0">postgresDB.db = db
+
+        sqlDB, err := postgresDB.db.DB()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        <span class="cov0" title="0">sqlDB.SetMaxIdleConns(postgresDB.MaxIdleConnections)
+        sqlDB.SetMaxOpenConns(postgresDB.MaxOpenConnections)
+
+        postgresDB.db = db
+        log.Info("connected to Postgres DB")
+
+        postgresDB.Migrate()
+        return &amp;postgresDB</span>
+}
+
+func (postgresDB *Postgres) Migrate() <span class="cov0" title="0">{
+        err := postgresDB.db.AutoMigrate(&amp;domain.Purchase{}, &amp;domain.Transaction{}, &amp;domain.User{}, &amp;domain.Merch{})
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("failed to migrate database: %v", err)
+        }</span>
+}
+
+func (postgresDB *Postgres) Seed() <span class="cov0" title="0">{
+        users := []domain.User{
+                {Username: "user1", Password: hash.HashPassword("user1")},
+                {Username: "user2", Password: hash.HashPassword("hashed_password")},
+        }
+        if err := postgresDB.db.CreateInBatches(users, len(users)).Error; err != nil </span><span class="cov0" title="0">{
+                log.Printf("failed to seed users: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">merchItems := []domain.Merch{
+                {Name: "t-shirt", Price: 80},
+                {Name: "cup", Price: 20},
+                {Name: "book", Price: 50},
+                {Name: "pen", Price: 10},
+                {Name: "powerbank", Price: 200},
+                {Name: "hoody", Price: 300},
+                {Name: "umbrella", Price: 200},
+                {Name: "socks", Price: 10},
+                {Name: "wallet", Price: 50},
+                {Name: "pink-hoody", Price: 500},
+        }
+        if err := postgresDB.db.CreateInBatches(merchItems, len(merchItems)).Error; err != nil </span><span class="cov0" title="0">{
+                log.Printf("failed to seed merchandise: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">purchases := []domain.Purchase{
+                {UserID: users[0].Username, MerchName: merchItems[0].Name, CreatedAt: time.Now()},
+        }
+        if err := postgresDB.db.CreateInBatches(purchases, len(purchases)).Error; err != nil </span><span class="cov0" title="0">{
+                log.Printf("failed to seed purchases: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">transactions := []domain.Transaction{
+                {ReceiverUsername: users[0].Username, SenderUsername: users[1].Username, MoneyAmount: 100, CreatedAt: time.Now()},
+        }
+        if err := postgresDB.db.CreateInBatches(transactions, len(transactions)).Error; err != nil </span><span class="cov0" title="0">{
+                log.Printf("failed to seed transactions: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Infof("Database seeded successfully")</span>
+}
+
+func (postgresDB *Postgres) GetDB() *gorm.DB <span class="cov0" title="0">{
+        return postgresDB.db
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package hash
+
+import "golang.org/x/crypto/bcrypt"
+
+func HashPassword(password string) string <span class="cov0" title="0">{
+        bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+        <span class="cov0" title="0">return string(bytes)</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package logger
+
+import log "github.com/sirupsen/logrus"
+
+func InitLogger() <span class="cov0" title="0">{
+        log.SetFormatter(&amp;log.JSONFormatter{})
+        log.SetLevel(log.InfoLevel)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
