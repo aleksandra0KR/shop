@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"shop/domain"
 	"shop/internal/controller"
+	"shop/internal/controller/middleware"
 	"shop/internal/repository"
 	"shop/internal/usecase"
 	hash "shop/pkg"
@@ -76,6 +77,10 @@ func TestAuthHandlerIntegration(t *testing.T) {
 	db.Create(&user)
 
 	token := performAuthRequest(t, router, "testuser", "user1")
+	expectedToken, err := middleware.JWT{}.GenerateToken(&user)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedToken, token)
 }
 
 func TestSendCoinHandlerIntegration(t *testing.T) {
