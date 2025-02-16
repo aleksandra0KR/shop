@@ -1,0 +1,46 @@
+run:
+  deadline: 5m
+  issues-exit-code: 1
+  tests: true
+
+
+output:
+  formats: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+
+linters-settings:
+  govet:
+    disable:
+      - printf
+    shadow: true
+  golint:
+    min-confidence: 0.8
+  gofmt:
+    simplify: true
+  stylecheck:
+    checks: [ "all", "-ST1018" ]
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gofmt
+    - stylecheck
+    - gosimple
+    - govet
+    - ineffassign
+    - copyloopvar
+    - staticcheck
+    - typecheck
+    - unconvert
+
+
+issues:
+  exclude:
+    - Using the variable on range scope .* in function literal
+  exclude-use-default: true
+
+  max-per-linter: 0
+  max-same-issues: 0
