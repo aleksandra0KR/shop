@@ -24,6 +24,10 @@ func (m *MockUsers) UpdateUser(tx *gorm.DB, user *domain.User) error {
 	args := m.Called(tx, user)
 	return args.Error(0)
 }
+func (m *MockUsers) CreateUser(user *domain.User) (*domain.User, error) {
+	args := m.Called(user)
+	return args.Get(0).(*domain.User), args.Error(1)
+}
 
 func (m *MockMerch) GetMerchByName(name string) (*domain.Merch, error) {
 	args := m.Called(name)
@@ -35,8 +39,8 @@ func (m *MockPurchases) Create(tx *gorm.DB, purchase *domain.Purchase) (*domain.
 	return args.Get(0).(*domain.Purchase), args.Error(1)
 }
 
-func (m *MockPurchases) GetPurchasesForUserByUserGUID(userGUID string) ([]domain.Purchase, error) {
-	args := m.Called(userGUID)
+func (m *MockPurchases) GetPurchasesForUserByUsername(username string) ([]domain.Purchase, error) {
+	args := m.Called(username)
 	return args.Get(0).([]domain.Purchase), args.Error(1)
 }
 
@@ -45,8 +49,8 @@ func (m *MockTransactions) Create(tx *gorm.DB, transaction *domain.Transaction) 
 	return args.Get(0).(*domain.Transaction), args.Error(1)
 }
 
-func (m *MockTransactions) GetTransactionsForUserByUserGUID(userGUID string) ([]domain.Transaction, error) {
-	args := m.Called(userGUID)
+func (m *MockTransactions) GetTransactionsForUserByUsername(username string) ([]domain.Transaction, error) {
+	args := m.Called(username)
 	return args.Get(0).([]domain.Transaction), args.Error(1)
 }
 
@@ -64,9 +68,9 @@ func TestCreatePurchase(t *testing.T) {
 		Transactions: mockTransactions,
 	}
 
-	user := &domain.User{GUID: "1", Username: "user", Balance: 10000}
-	merch := &domain.Merch{GUID: "1", Name: "cup", Price: 20}
-	purchase := &domain.Purchase{UserGUID: user.GUID, MerchGUID: merch.GUID}
+	user := &domain.User{Username: "user", Balance: 10000}
+	merch := &domain.Merch{Name: "cup", Price: 20}
+	purchase := &domain.Purchase{UserID: user.Username, MerchName: merch.Name}
 
 	mockUsers.On("GetUserByUsername", "user").Return(user, nil)
 	mockMerch.On("GetMerchByName", "cup").Return(merch, nil)
@@ -99,9 +103,9 @@ func TestCreateTransaction(t *testing.T) {
 		Transactions: mockTransactions,
 	}
 
-	sender := &domain.User{GUID: "1", Username: "user1", Balance: 1000}
-	receiver := &domain.User{GUID: "2", Username: "user2", Balance: 1000}
-	transaction := &domain.Transaction{SenderGUID: sender.GUID, ReceiverGUID: receiver.GUID, MoneyAmount: 20}
+	sender := &domain.User{Username: "user1", Balance: 1000}
+	receiver := &domain.User{Username: "user2", Balance: 1000}
+	transaction := &domain.Transaction{SenderUsername: sender.Username, ReceiverUsername: receiver.Username, MoneyAmount: 20}
 
 	mockUsers.On("GetUserByUsername", "user1").Return(sender, nil)
 	mockUsers.On("GetUserByUsername", "user2").Return(receiver, nil)
