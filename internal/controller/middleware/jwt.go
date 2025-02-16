@@ -17,7 +17,7 @@ func (JWT) GenerateToken(user *domain.User) (string, error) {
 	claims := &domain.Claims{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
-			Subject:   user.GUID,
+			Subject:   user.Username,
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
