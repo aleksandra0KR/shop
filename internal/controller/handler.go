@@ -1,11 +1,13 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
+
 	"shop/internal/controller/middleware"
 	"shop/internal/usecase"
-	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
@@ -93,6 +95,7 @@ func (h *Handler) SendCoinHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, transaction)
 }
+
 func (h *Handler) BuyItemHandler(c *gin.Context) {
 	itemName := c.Param("item")
 	username := c.MustGet("username").(string)
@@ -113,6 +116,7 @@ func (h *Handler) BuyItemHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, purchase)
 }
+
 func (h *Handler) InfoHandler(c *gin.Context) {
 	username := c.MustGet("username").(string)
 	if username == "" {

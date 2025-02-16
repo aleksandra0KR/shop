@@ -2,13 +2,15 @@ package database
 
 import (
 	"fmt"
+	"os"
+	"time"
+
+	"shop/domain"
+	hash "shop/pkg"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
-	"shop/domain"
-	hash "shop/pkg"
-	"time"
 )
 
 type Postgres struct {

@@ -1,19 +1,23 @@
 package usecase
 
 import (
-	"gorm.io/gorm"
 	"testing"
+
+	"shop/domain"
+	"shop/internal/repository"
+
+	"gorm.io/gorm"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
-	"shop/domain"
-	"shop/internal/repository"
 )
 
-type MockUsers struct{ mock.Mock }
-type MockPurchases struct{ mock.Mock }
-type MockTransactions struct{ mock.Mock }
+type (
+	MockUsers        struct{ mock.Mock }
+	MockPurchases    struct{ mock.Mock }
+	MockTransactions struct{ mock.Mock }
+)
 
 func (m *MockUsers) GetUserByUsername(username string) (*domain.User, error) {
 	args := m.Called(username)
@@ -27,6 +31,7 @@ func (m *MockUsers) UpdateUser(tx *gorm.DB, user *domain.User) error {
 	args := m.Called(tx, user)
 	return args.Error(0)
 }
+
 func (m *MockUsers) CreateUser(user *domain.User) (*domain.User, error) {
 	args := m.Called(user)
 	return user, args.Error(0)

@@ -3,16 +3,18 @@ package controller
 import (
 	"bytes"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"testing"
+	"time"
+
 	"shop/domain"
 	"shop/internal/controller/middleware"
 	mockusecase "shop/internal/usecase/mocks"
-	"testing"
-	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func setupRouter() *gin.Engine {
@@ -209,6 +211,7 @@ func TestSendCoinHandler_InsufficientFunds(t *testing.T) {
 	assert.Equal(t, expectedResponseBody, w.Body.String())
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
+
 func TestSendCoinHandler_BadRequest_MissingFields(t *testing.T) {
 	router := setupRouter()
 	user := domain.User{Username: "test", Password: "test"}

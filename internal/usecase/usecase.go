@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"errors"
-	"golang.org/x/crypto/bcrypt"
+
 	"shop/domain"
 	"shop/internal/repository"
 	hash "shop/pkg"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:generate mockgen -source=usecase.go -destination=mocks/mock.go

@@ -6,21 +6,22 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
+	"shop/domain"
 	"shop/internal/controller"
+	"shop/internal/repository"
+	"shop/internal/usecase"
 	hash "shop/pkg"
 	"shop/pkg/database"
 	"shop/pkg/logger"
 	"testing"
 
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
-	"shop/domain"
-	"shop/internal/repository"
-	"shop/internal/usecase"
 )
 
 func setupTestDB() (http.Handler, usecase.Usecase, *gorm.DB) {
@@ -159,5 +160,4 @@ func clearDatabase(db *gorm.DB) {
 	db.Exec("DELETE FROM purchases")
 	db.Exec("DELETE FROM merches")
 	db.Exec("DELETE FROM users")
-
 }

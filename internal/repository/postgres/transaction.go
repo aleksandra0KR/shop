@@ -1,10 +1,11 @@
 package postgres
 
 import (
+	"shop/domain"
+
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"shop/domain"
 )
 
 type Transactions struct {

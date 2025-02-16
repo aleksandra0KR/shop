@@ -1,9 +1,10 @@
 package postgres
 
 import (
+	"shop/domain"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"shop/domain"
 )
 
 type Merch struct {

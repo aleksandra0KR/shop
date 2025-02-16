@@ -1,9 +1,10 @@
 package postgres
 
 import (
+	"shop/domain"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"shop/domain"
 )
 
 type Purchases struct {
@@ -27,8 +28,8 @@ func (r *Purchases) Create(tx *gorm.DB, purchase *domain.Purchase) (*domain.Purc
 		return nil, db.Error
 	}
 	return purchase, nil
-
 }
+
 func (r *Purchases) GetPurchasesForUserByUsername(username string) ([]domain.Purchase, error) {
 	var purchases []domain.Purchase
 	db := r.db.Where("user_id= ?", username).Find(&purchases)

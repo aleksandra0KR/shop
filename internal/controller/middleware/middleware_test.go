@@ -1,12 +1,14 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"shop/domain"
 	"testing"
+
+	"shop/domain"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 func Setup() *gin.Engine {

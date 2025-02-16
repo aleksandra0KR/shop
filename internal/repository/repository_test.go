@@ -3,17 +3,20 @@ package repository
 import (
 	"testing"
 
+	"shop/domain"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"shop/domain"
 )
 
-type MockUsers struct{ mock.Mock }
-type MockMerch struct{ mock.Mock }
-type MockPurchases struct{ mock.Mock }
-type MockTransactions struct{ mock.Mock }
+type (
+	MockUsers        struct{ mock.Mock }
+	MockMerch        struct{ mock.Mock }
+	MockPurchases    struct{ mock.Mock }
+	MockTransactions struct{ mock.Mock }
+)
 
 func (m *MockUsers) GetUserByUsername(username string) (*domain.User, error) {
 	args := m.Called(username)
@@ -24,6 +27,7 @@ func (m *MockUsers) UpdateUser(tx *gorm.DB, user *domain.User) error {
 	args := m.Called(tx, user)
 	return args.Error(0)
 }
+
 func (m *MockUsers) CreateUser(user *domain.User) (*domain.User, error) {
 	args := m.Called(user)
 	return args.Get(0).(*domain.User), args.Error(1)

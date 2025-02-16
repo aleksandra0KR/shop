@@ -2,10 +2,12 @@ package repository
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+
 	"shop/domain"
 	"shop/internal/repository/postgres"
+
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 //go:generate mockgen -source=repository.go -destination=mocks/mock.go
