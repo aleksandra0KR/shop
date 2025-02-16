@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"errors"
 	"gorm.io/gorm"
 	"testing"
 
@@ -28,6 +27,10 @@ func (m *MockUsers) UpdateUser(tx *gorm.DB, user *domain.User) error {
 	args := m.Called(tx, user)
 	return args.Error(0)
 }
+func (m *MockUsers) CreateUser(user *domain.User) (*domain.User, error) {
+	args := m.Called(user)
+	return user, args.Error(0)
+}
 
 func (m *MockPurchases) Create(tx *gorm.DB, purchase *domain.Purchase) (*domain.Purchase, error) {
 	args := m.Called(tx, purchase)
@@ -37,8 +40,8 @@ func (m *MockPurchases) Create(tx *gorm.DB, purchase *domain.Purchase) (*domain.
 	return nil, args.Error(1)
 }
 
-func (m *MockPurchases) GetPurchasesForUserByUserGUID(userGUID string) ([]domain.Purchase, error) {
-	args := m.Called(userGUID)
+func (m *MockPurchases) GetPurchasesForUserByUsername(username string) ([]domain.Purchase, error) {
+	args := m.Called(username)
 	return args.Get(0).([]domain.Purchase), args.Error(1)
 }
 
@@ -50,8 +53,8 @@ func (m *MockTransactions) Create(tx *gorm.DB, transaction *domain.Transaction) 
 	return nil, args.Error(1)
 }
 
-func (m *MockTransactions) GetTransactionsForUserByUserGUID(userGUID string) ([]domain.Transaction, error) {
-	args := m.Called(userGUID)
+func (m *MockTransactions) GetTransactionsForUserByUsername(username string) ([]domain.Transaction, error) {
+	args := m.Called(username)
 	return args.Get(0).([]domain.Transaction), args.Error(1)
 }
 
@@ -69,12 +72,6 @@ func TestAuth(t *testing.T) {
 	assert.NotNil(t, authUser)
 	assert.Equal(t, "user", authUser.Username)
 
-	mockUsers.On("GetUserByUsername", "user2").Return(nil, nil)
-	authUser, err = usecase.Auth("user2", "user2")
-	assert.Error(t, err)
-	assert.Nil(t, authUser)
-	assert.Equal(t, "user not found", err.Error())
-
 	mockUsers.On("GetUserByUsername", "user").Return(user, nil)
 	authUser, err = usecase.Auth("user", "user2")
 	assert.Error(t, err)
@@ -84,54 +81,50 @@ func TestAuth(t *testing.T) {
 	mockUsers.AssertExpectations(t)
 }
 
-func TestGetPurchasesForUserByUserGUID(t *testing.T) {
+func TestGetPurchasesForUserByUsername(t *testing.T) {
 	mockUsers := new(MockUsers)
 	mockPurchases := new(MockPurchases)
 	repo := &repository.Repository{Users: mockUsers, Purchases: mockPurchases}
 	usecase := NewUsecase(repo)
 
-	user := &domain.User{GUID: "1", Username: "user"}
-	purchases := []domain.Purchase{{UserGUID: "1"}, {UserGUID: "1"}}
+	purchases := []domain.Purchase{{UserID: "user"}, {UserID: "user"}}
 
-	mockUsers.On("GetUserByUsername", "user").Return(user, nil)
-	mockPurchases.On("GetPurchasesForUserByUserGUID", "1").Return(purchases, nil)
+	mockPurchases.On("GetPurchasesForUserByUsername", "user").Return(purchases, nil)
 
 	result, err := usecase.GetPurchasesForUserByUsername("user")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 
-	mockUsers.On("GetUserByUsername", "user2").Return(nil, errors.New("user not found"))
+	mockPurchases.On("GetPurchasesForUserByUsername", "user2").Return([]domain.Purchase{}, nil)
 	result, err = usecase.GetPurchasesForUserByUsername("user2")
-	assert.Error(t, err)
-	assert.Nil(t, result)
+	assert.NoError(t, err)
+	assert.Len(t, result, 0)
 
 	mockUsers.AssertExpectations(t)
 	mockPurchases.AssertExpectations(t)
 }
 
-func TestGetTransactionsForUserByUserGUID(t *testing.T) {
+func TestGetTransactionsForUserByUsername(t *testing.T) {
 	mockUsers := new(MockUsers)
 	mockTransactions := new(MockTransactions)
 	repo := &repository.Repository{Users: mockUsers, Transactions: mockTransactions}
 	usecase := NewUsecase(repo)
 
-	user := &domain.User{GUID: "1", Username: "user1"}
 	transactions := []domain.Transaction{
-		{SenderGUID: "1", ReceiverGUID: "2", MoneyAmount: 20},
-		{SenderGUID: "1", ReceiverGUID: "3", MoneyAmount: 30},
+		{SenderUsername: "user1", ReceiverUsername: "user2", MoneyAmount: 20},
+		{SenderUsername: "user1", ReceiverUsername: "user3", MoneyAmount: 30},
 	}
 
-	mockUsers.On("GetUserByUsername", "user1").Return(user, nil)
-	mockTransactions.On("GetTransactionsForUserByUserGUID", "1").Return(transactions, nil)
+	mockTransactions.On("GetTransactionsForUserByUsername", "user1").Return(transactions, nil)
 
 	result, err := usecase.GetTransactionsForUserByUsername("user1")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 
-	mockUsers.On("GetUserByUsername", "user8").Return(nil, errors.New("user not found"))
+	mockTransactions.On("GetTransactionsForUserByUsername", "user8").Return([]domain.Transaction{}, nil)
 	result, err = usecase.GetTransactionsForUserByUsername("user8")
-	assert.Error(t, err)
-	assert.Nil(t, result)
+	assert.NoError(t, err)
+	assert.Len(t, result, 0)
 
 	mockUsers.AssertExpectations(t)
 	mockTransactions.AssertExpectations(t)

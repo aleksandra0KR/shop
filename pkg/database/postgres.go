@@ -2,13 +2,12 @@ package database
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"os"
 	"shop/domain"
+	hash "shop/pkg"
 	"time"
 )
 
@@ -66,45 +65,46 @@ func InitializeDBPostgres(maxIdleConnections, maxOpenConnections int) *Postgres 
 }
 
 func (postgresDB *Postgres) Migrate() {
-	if err := postgresDB.db.AutoMigrate(&domain.User{}, &domain.Merch{}, &domain.Purchase{}, &domain.Transaction{}); err != nil {
-		log.Fatal("failed to create tables:", err)
+	err := postgresDB.db.AutoMigrate(&domain.Purchase{}, &domain.Transaction{}, &domain.User{}, &domain.Merch{})
+	if err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
 	}
 }
 
 func (postgresDB *Postgres) Seed() {
 	users := []domain.User{
-		{GUID: uuid.New().String(), Username: "user1", Password: hashPassword("user1")},
-		{GUID: uuid.New().String(), Username: "user2", Password: hashPassword("hashed_password")},
+		{Username: "user1", Password: hash.HashPassword("user1")},
+		{Username: "user2", Password: hash.HashPassword("hashed_password")},
 	}
 	if err := postgresDB.db.CreateInBatches(users, len(users)).Error; err != nil {
 		log.Fatalf("failed to seed users: %v", err)
 	}
 
 	merchItems := []domain.Merch{
-		{GUID: uuid.New().String(), Name: "t-shirt", Price: 80},
-		{GUID: uuid.New().String(), Name: "cup", Price: 20},
-		{GUID: uuid.New().String(), Name: "book", Price: 50},
-		{GUID: uuid.New().String(), Name: "pen", Price: 10},
-		{GUID: uuid.New().String(), Name: "powerbank", Price: 200},
-		{GUID: uuid.New().String(), Name: "hoody", Price: 300},
-		{GUID: uuid.New().String(), Name: "umbrella", Price: 200},
-		{GUID: uuid.New().String(), Name: "socks", Price: 10},
-		{GUID: uuid.New().String(), Name: "wallet", Price: 50},
-		{GUID: uuid.New().String(), Name: "pink-hoody", Price: 500},
+		{Name: "t-shirt", Price: 80},
+		{Name: "cup", Price: 20},
+		{Name: "book", Price: 50},
+		{Name: "pen", Price: 10},
+		{Name: "powerbank", Price: 200},
+		{Name: "hoody", Price: 300},
+		{Name: "umbrella", Price: 200},
+		{Name: "socks", Price: 10},
+		{Name: "wallet", Price: 50},
+		{Name: "pink-hoody", Price: 500},
 	}
 	if err := postgresDB.db.CreateInBatches(merchItems, len(merchItems)).Error; err != nil {
 		log.Fatalf("failed to seed merchandise: %v", err)
 	}
 
 	purchases := []domain.Purchase{
-		{GUID: uuid.New().String(), UserGUID: users[0].GUID, MerchGUID: merchItems[0].GUID, CreatedAt: time.Now()},
+		{UserID: users[0].Username, MerchName: merchItems[0].Name, CreatedAt: time.Now()},
 	}
 	if err := postgresDB.db.CreateInBatches(purchases, len(purchases)).Error; err != nil {
 		log.Fatalf("failed to seed purchases: %v", err)
 	}
 
 	transactions := []domain.Transaction{
-		{GUID: uuid.New().String(), ReceiverGUID: users[0].GUID, SenderGUID: users[1].GUID, MoneyAmount: 100, CreatedAt: time.Now()},
+		{ReceiverUsername: users[0].Username, SenderUsername: users[1].Username, MoneyAmount: 100, CreatedAt: time.Now()},
 	}
 	if err := postgresDB.db.CreateInBatches(transactions, len(transactions)).Error; err != nil {
 		log.Fatalf("failed to seed transactions: %v", err)
@@ -115,12 +115,4 @@ func (postgresDB *Postgres) Seed() {
 
 func (postgresDB *Postgres) GetDB() *gorm.DB {
 	return postgresDB.db
-}
-
-func hashPassword(password string) string {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	if err != nil {
-		panic(err)
-	}
-	return string(bytes)
 }
