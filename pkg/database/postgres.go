@@ -79,7 +79,7 @@ func (postgresDB *Postgres) Seed() {
 		{Username: "user2", Password: hash.HashPassword("hashed_password")},
 	}
 	if err := postgresDB.db.CreateInBatches(users, len(users)).Error; err != nil {
-		log.Println("failed to seed users: %v", err)
+		log.Printf("failed to seed users: %v", err)
 	}
 
 	merchItems := []domain.Merch{
@@ -95,21 +95,21 @@ func (postgresDB *Postgres) Seed() {
 		{Name: "pink-hoody", Price: 500},
 	}
 	if err := postgresDB.db.CreateInBatches(merchItems, len(merchItems)).Error; err != nil {
-		log.Println("failed to seed merchandise: %v", err)
+		log.Printf("failed to seed merchandise: %v", err)
 	}
 
 	purchases := []domain.Purchase{
 		{UserID: users[0].Username, MerchName: merchItems[0].Name, CreatedAt: time.Now()},
 	}
 	if err := postgresDB.db.CreateInBatches(purchases, len(purchases)).Error; err != nil {
-		log.Println("failed to seed purchases: %v", err)
+		log.Printf("failed to seed purchases: %v", err)
 	}
 
 	transactions := []domain.Transaction{
 		{ReceiverUsername: users[0].Username, SenderUsername: users[1].Username, MoneyAmount: 100, CreatedAt: time.Now()},
 	}
 	if err := postgresDB.db.CreateInBatches(transactions, len(transactions)).Error; err != nil {
-		log.Println("failed to seed transactions: %v", err)
+		log.Printf("failed to seed transactions: %v", err)
 	}
 
 	log.Infof("Database seeded successfully")
