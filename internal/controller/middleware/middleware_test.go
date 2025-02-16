@@ -1,12 +1,14 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"shop/domain"
 	"testing"
+
+	"shop/domain"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 func Setup() *gin.Engine {
@@ -49,7 +51,7 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	router := Setup()
 
-	user := domain.User{Username: "test", Password: "test", GUID: "1"}
+	user := domain.User{Username: "test", Password: "test"}
 	validToken, err := JWT{}.GenerateToken(&user)
 	if err != nil {
 		t.Fatal(err)

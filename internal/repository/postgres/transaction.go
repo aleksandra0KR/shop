@@ -1,10 +1,11 @@
 package postgres
 
 import (
+	"shop/domain"
+
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"shop/domain"
 )
 
 type Transactions struct {
@@ -31,10 +32,10 @@ func (r *Transactions) Create(tx *gorm.DB, transaction *domain.Transaction) (*do
 	return transaction, nil
 }
 
-func (r *Transactions) GetTransactionsForUserByUserGUID(userGUID string) ([]domain.Transaction, error) {
+func (r *Transactions) GetTransactionsForUserByUsername(username string) ([]domain.Transaction, error) {
 	var transactions []domain.Transaction
 
-	r.db.Where("receiver_guid = ? OR sender_guid = ?", userGUID, userGUID).Find(&transactions)
+	r.db.Where("receiver_username = ? OR sender_username = ?", username, username).Find(&transactions)
 	if r.db.Error != nil {
 		log.Errorf(r.db.Error.Error())
 		return nil, r.db.Error

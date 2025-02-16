@@ -1,13 +1,15 @@
 package middleware
 
 import (
+	"net/http"
+	"os"
+	"time"
+
+	"shop/domain"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"shop/domain"
-	"time"
 )
 
 type JWT struct{}
@@ -17,7 +19,7 @@ func (JWT) GenerateToken(user *domain.User) (string, error) {
 	claims := &domain.Claims{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
-			Subject:   user.GUID,
+			Subject:   user.Username,
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
@@ -47,7 +49,6 @@ func AuthMiddleware() gin.HandlerFunc {
 		token, err := jwt.ParseWithClaims(authHeader, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(os.Getenv("SECRET_KEY")), nil
 		})
-
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()

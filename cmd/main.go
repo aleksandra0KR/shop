@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+
 	"shop/internal/controller"
 	"shop/internal/repository"
 	"shop/internal/usecase"
 	"shop/pkg/database"
 	"shop/pkg/logger"
+
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -19,7 +21,7 @@ func main() {
 
 	port := os.Getenv("HTTP_PORT")
 	db := database.InitializeDBPostgres(3, 10)
-	//db.Seed()
+	// db.Seed()
 	logger.InitLogger()
 
 	repository := repository.NewRepository(db.GetDB())

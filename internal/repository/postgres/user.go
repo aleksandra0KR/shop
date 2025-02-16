@@ -1,9 +1,10 @@
 package postgres
 
 import (
+	"shop/domain"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"shop/domain"
 )
 
 type Users struct {
@@ -37,4 +38,13 @@ func (r *Users) UpdateUser(tx *gorm.DB, user *domain.User) error {
 		return db.Error
 	}
 	return nil
+}
+
+func (r *Users) CreateUser(user *domain.User) (*domain.User, error) {
+	r.db.Create(&user)
+	if r.db.Error != nil {
+		log.Errorf(r.db.Error.Error())
+		return nil, r.db.Error
+	}
+	return user, nil
 }

@@ -1,11 +1,13 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
+
 	"shop/internal/controller/middleware"
 	"shop/internal/usecase"
-	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
@@ -47,7 +49,7 @@ func (h *Handler) AuthHandler(c *gin.Context) {
 
 	user, err := h.service.Auth(req.Username, req.Password)
 	if err != nil {
-		if err.Error() != "user not found" && err.Error() != "invalid password" {
+		if err.Error() != "invalid password" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -56,15 +58,13 @@ func (h *Handler) AuthHandler(c *gin.Context) {
 
 	token, err := middleware.JWT{}.GenerateToken(user)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	expirationTime := time.Now().Add(5 * time.Hour)
-	c.SetCookie("accessToken", token, int(expirationTime.Unix()), "/", "localhost", false, true)
+	c.SetCookie("accessToken", token, int(expirationTime.Unix()), "/", "localhost", false, false)
 
-	c.JSON(http.StatusOK,
-		gin.H{"response": gin.H{"accessToken": token}})
-
+	c.JSON(http.StatusOK, gin.H{"response": gin.H{"accessToken": token}})
 }
 
 func (h *Handler) SendCoinHandler(c *gin.Context) {
@@ -95,6 +95,7 @@ func (h *Handler) SendCoinHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, transaction)
 }
+
 func (h *Handler) BuyItemHandler(c *gin.Context) {
 	itemName := c.Param("item")
 	username := c.MustGet("username").(string)
@@ -115,6 +116,7 @@ func (h *Handler) BuyItemHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, purchase)
 }
+
 func (h *Handler) InfoHandler(c *gin.Context) {
 	username := c.MustGet("username").(string)
 	if username == "" {

@@ -3,20 +3,22 @@ package controller
 import (
 	"bytes"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"shop/domain"
+	"shop/internal/controller/middleware"
+	mockusecase "shop/internal/usecase/mocks"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"shop/domain"
-	"shop/internal/controller/middleware"
-	mock_usecase "shop/internal/usecase/mocks"
-	"testing"
-	"time"
 )
 
 func setupRouter() *gin.Engine {
-	usecaseMock := new(mock_usecase.MockUsecase)
+	usecaseMock := new(mockusecase.MockUsecase)
 	handler := NewHandler(usecaseMock)
 	return handler.Handle().(*gin.Engine)
 }
@@ -68,7 +70,7 @@ func TestInfoHandler_Success_EmptyBody(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -88,19 +90,19 @@ func TestInfoHandler_Success_WithBody(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Set("username", "test")
 
-	purchase := domain.Purchase{GUID: "1", UserGUID: "1", MerchGUID: "1", CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
-	transaction := domain.Transaction{GUID: "1", ReceiverGUID: "2", SenderGUID: "1", MoneyAmount: 100, CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
+	purchase := domain.Purchase{GUID: "1", UserID: "user1", MerchName: "socks", CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
+	transaction := domain.Transaction{GUID: "1", ReceiverUsername: "user2", SenderUsername: "user1", MoneyAmount: 100, CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
 
 	mockUsecase.EXPECT().GetPurchasesForUserByUserGUID("test").Return([]domain.Purchase{purchase}, nil)
 	mockUsecase.EXPECT().GetTransactionsForUserByUserGUID("test").Return([]domain.Transaction{transaction}, nil)
-	expectedResponseBody := `{"purchases":[{"guid":"1","user_guid":"1","merch_guid":"1","created_at":"0001-01-01T00:00:00Z"}],"transactions":[{"guid":"1","created_at":"0001-01-01T00:00:00Z","receiver_guid":"2","sender_guid":"1","money_amount":100}]}`
+	expectedResponseBody := `{"purchases":[{"guid":"1","user_id":"user1","merch_name":"socks","created_at":"0001-01-01T00:00:00Z"}],"transactions":[{"guid":"1","created_at":"0001-01-01T00:00:00Z","receiver_username":"user2","sender_username":"user1","money_amount":100}]}`
 	h.InfoHandler(c)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -111,7 +113,7 @@ func TestInfoHandler_InternalServerError_Purchases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -130,7 +132,7 @@ func TestInfoHandler_InternalServerError_Transactions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -150,7 +152,7 @@ func TestSendCoinHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -159,9 +161,9 @@ func TestSendCoinHandler_Success(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("username", "sender")
 
-	transaction := domain.Transaction{GUID: "1", ReceiverGUID: "2", SenderGUID: "1", MoneyAmount: 10.0, CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
+	transaction := domain.Transaction{GUID: "1", ReceiverUsername: "user2", SenderUsername: "user1", MoneyAmount: 10.0, CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
 	mockUsecase.EXPECT().CreateTransaction("sender", "receiver", 10.0).Return(&transaction, nil)
-	expectedResponseBody := `{"guid":"1","created_at":"0001-01-01T00:00:00Z","receiver_guid":"2","sender_guid":"1","money_amount":10}`
+	expectedResponseBody := `{"guid":"1","created_at":"0001-01-01T00:00:00Z","receiver_username":"user2","sender_username":"user1","money_amount":10}`
 
 	h.SendCoinHandler(c)
 	assert.Equal(t, expectedResponseBody, w.Body.String())
@@ -172,7 +174,7 @@ func TestSendCoinHandler_InternalServerError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -193,7 +195,7 @@ func TestSendCoinHandler_InsufficientFunds(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -209,9 +211,10 @@ func TestSendCoinHandler_InsufficientFunds(t *testing.T) {
 	assert.Equal(t, expectedResponseBody, w.Body.String())
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
+
 func TestSendCoinHandler_BadRequest_MissingFields(t *testing.T) {
 	router := setupRouter()
-	user := domain.User{Username: "test", Password: "test", GUID: "1"}
+	user := domain.User{Username: "test", Password: "test"}
 	validToken, err := middleware.JWT{}.GenerateToken(&user)
 	if err != nil {
 		t.Fatal(err)
@@ -230,7 +233,7 @@ func TestSendCoinHandler_BadRequest_MissingFields(t *testing.T) {
 
 func TestSendCoinHandler_BadRequest_WrongFieldNames(t *testing.T) {
 	router := setupRouter()
-	user := domain.User{Username: "test", Password: "test", GUID: "1"}
+	user := domain.User{Username: "test", Password: "test"}
 	validToken, err := middleware.JWT{}.GenerateToken(&user)
 	if err != nil {
 		t.Fatal(err)
@@ -251,7 +254,7 @@ func TestBuyItemHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -259,9 +262,9 @@ func TestBuyItemHandler_Success(t *testing.T) {
 	c.Params = append(c.Params, gin.Param{Key: "item", Value: "sock"})
 	c.Set("username", "buyer")
 
-	purchase := domain.Purchase{GUID: "1", UserGUID: "1", MerchGUID: "1", CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
+	purchase := domain.Purchase{GUID: "1", UserID: "1", MerchName: "1", CreatedAt: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)}
 	mockUsecase.EXPECT().CreatePurchase("buyer", "sock").Return(&purchase, nil)
-	expectedResponseBody := `{"guid":"1","user_guid":"1","merch_guid":"1","created_at":"0001-01-01T00:00:00Z"}`
+	expectedResponseBody := `{"guid":"1","user_id":"1","merch_name":"1","created_at":"0001-01-01T00:00:00Z"}`
 
 	h.BuyItemHandler(c)
 
@@ -273,7 +276,7 @@ func TestBuyItemHandler_InternalServerError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -294,7 +297,7 @@ func TestBuyItemHandler_BadRequest_InsufficientBalance(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUsecase := mock_usecase.NewMockUsecase(ctrl)
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
 	h := NewHandler(mockUsecase)
 
 	w := httptest.NewRecorder()
@@ -312,4 +315,74 @@ func TestBuyItemHandler_BadRequest_InsufficientBalance(t *testing.T) {
 	h.BuyItemHandler(c)
 	assert.Equal(t, expectedResponseBody, w.Body.String())
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAuthHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockUsecase := mockusecase.NewMockUsecase(ctrl)
+	h := NewHandler(mockUsecase)
+
+	t.Run("Invalid JSON Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{"username": "user1", "password": "user1"`))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		h.AuthHandler(c)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.JSONEq(t, `{"error": "Invalid request"}`, w.Body.String())
+	})
+
+	t.Run("Missing or Invalid Fields", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{"username": "", "password": "user1"}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.AuthHandler(c)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.JSONEq(t, `{"error": "Missing or invalid fields"}`, w.Body.String())
+
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{"username": "user1", "password": ""}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.AuthHandler(c)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.JSONEq(t, `{"error": "Missing or invalid fields"}`, w.Body.String())
+	})
+
+	t.Run("Authentication Failure", func(t *testing.T) {
+		mockUsecase.EXPECT().Auth("user1", "user1user1").Return(nil, errors.New("invalid password"))
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{"username": "user1", "password": "user1user1"}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.AuthHandler(c)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.JSONEq(t, `{"error": "invalid password"}`, w.Body.String())
+	})
+
+	t.Run("Successful Authentication", func(t *testing.T) {
+		mockUser := &domain.User{Username: "user1", Password: "user1"}
+		mockUsecase.EXPECT().Auth("user1", "user1").Return(mockUser, nil)
+
+		mockToken, err := middleware.JWT{}.GenerateToken(mockUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{"username": "user1", "password": "user1"}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.AuthHandler(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.JSONEq(t, `{"response": {"accessToken": "`+mockToken+`"}}`, w.Body.String())
+	})
 }

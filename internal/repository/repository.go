@@ -2,10 +2,12 @@ package repository
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+
 	"shop/domain"
 	"shop/internal/repository/postgres"
+
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 //go:generate mockgen -source=repository.go -destination=mocks/mock.go
@@ -30,6 +32,7 @@ func NewRepository(db *gorm.DB) *Repository {
 type Users interface {
 	GetUserByUsername(string) (*domain.User, error)
 	UpdateUser(*gorm.DB, *domain.User) error
+	CreateUser(*domain.User) (*domain.User, error)
 }
 
 type Merch interface {
@@ -38,12 +41,12 @@ type Merch interface {
 
 type Purchases interface {
 	Create(*gorm.DB, *domain.Purchase) (*domain.Purchase, error)
-	GetPurchasesForUserByUserGUID(string) ([]domain.Purchase, error)
+	GetPurchasesForUserByUsername(string) ([]domain.Purchase, error)
 }
 
 type Transactions interface {
 	Create(*gorm.DB, *domain.Transaction) (*domain.Transaction, error)
-	GetTransactionsForUserByUserGUID(string) ([]domain.Transaction, error)
+	GetTransactionsForUserByUsername(string) ([]domain.Transaction, error)
 }
 
 func (r *Repository) CreatePurchase(username string, merchName string) (*domain.Purchase, error) {
@@ -70,9 +73,9 @@ func (r *Repository) CreatePurchase(username string, merchName string) (*domain.
 
 	purchase := &domain.Purchase{
 		User:      *user,
-		UserGUID:  user.GUID,
+		UserID:    user.Username,
 		Merch:     *merch,
-		MerchGUID: merch.GUID,
+		MerchName: merch.Name,
 	}
 	purchase, err = r.Purchases.Create(tx, purchase)
 	if err != nil {
@@ -117,11 +120,11 @@ func (r *Repository) CreateTransaction(receiverName, senderName string, money fl
 	receiver.Balance += money
 
 	transaction := &domain.Transaction{
-		Receiver:     *receiver,
-		Sender:       *sender,
-		MoneyAmount:  money,
-		ReceiverGUID: receiver.GUID,
-		SenderGUID:   sender.GUID,
+		Receiver:         *receiver,
+		Sender:           *sender,
+		MoneyAmount:      money,
+		ReceiverUsername: receiver.Username,
+		SenderUsername:   sender.Username,
 	}
 
 	transaction, err = r.Transactions.Create(tx, transaction)
