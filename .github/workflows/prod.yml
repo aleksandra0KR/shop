@@ -28,32 +28,11 @@ jobs:
       - name: Run tests
         run: go test ./...
 
-  golangci:
+  linter:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
         with:
-          go-version: '1.23'
-
-      - name: Install dependencies
-        run: |
-          go mod tidy
-          go get -u ./...
-
-      - name: Clean up existing files
-        run: |
-          rm -rf $(go env GOPATH)/pkg/mod
-          rm -rf $(go env GOPATH)/bin
-
-      - name: Install golangci-lint
-        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55
-
-      - name: Run golangci-lint
-        run: golangci-lint run ./... --timeout 10m
-        continue-on-error: true
+          version: v1.41
