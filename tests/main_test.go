@@ -76,7 +76,6 @@ func TestAuthHandlerIntegration(t *testing.T) {
 	db.Create(&user)
 
 	token := performAuthRequest(t, router, "testuser", "user1")
-	t.Logf("Captured token: %s", token)
 }
 
 func TestSendCoinHandlerIntegration(t *testing.T) {

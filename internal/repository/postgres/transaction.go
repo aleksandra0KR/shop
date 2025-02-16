@@ -35,7 +35,7 @@ func (r *Transactions) Create(tx *gorm.DB, transaction *domain.Transaction) (*do
 func (r *Transactions) GetTransactionsForUserByUsername(username string) ([]domain.Transaction, error) {
 	var transactions []domain.Transaction
 
-	r.db.Where("receiver_name = ? OR sender_name = ?", username, username).Find(&transactions)
+	r.db.Where("receiver_username = ? OR sender_username = ?", username, username).Find(&transactions)
 	if r.db.Error != nil {
 		log.Errorf(r.db.Error.Error())
 		return nil, r.db.Error
