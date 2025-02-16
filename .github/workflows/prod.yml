@@ -59,6 +59,10 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
+      - name: Free port 5438
+        run: |
+          sudo lsof -t -i :5438 | xargs -r kill -9
+
       - name: Build and start services
         run: docker compose up -d --build
 
